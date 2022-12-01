@@ -3,7 +3,7 @@
 """
 
 # Version of the mc-s2t-mediacatch_s2t
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 import os
 
@@ -19,4 +19,4 @@ TRANSCRIPT_URL = (
     os.environ.get('MEDIACATCH_TRANSCRIPT_URL') or
     'https://s2t.mediacatch.io/result'
 )
-PROCESSING_TIME_RATIO = 0.75
+PROCESSING_TIME_RATIO = 0.1

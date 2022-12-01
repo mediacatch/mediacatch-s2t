@@ -19,7 +19,7 @@ def test_get_duration_mocked_return_value(mock_pymedia):
 
 
 def test_estimated_result_time():
-    assert Uploader('fake file', 'fake key').estimated_result_time(1000) == 1
+    assert Uploader('fake file', 'fake key').estimated_result_time(10000) == 1
 
 @responses.activate
 @mock.patch("builtins.open", new_callable=mock.mock_open,
@@ -58,7 +58,7 @@ def test_upload_succeed(mock_pymedia, mock_getsize, mock_Path, mock_open):
         responses.POST, URL_EXAMPLE, status=200
     )
     expected_output = {
-        'estimated_processing_time': 75,
+        'estimated_processing_time': 10,
         'message': 'The file has been uploaded.',
         'status': 'uploaded',
         'url': 'https://s2t.mediacatch.io/result?id=some-id&api_key=fake-key'
