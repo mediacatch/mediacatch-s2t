@@ -6,7 +6,7 @@ import pymediainfo
 import requests
 
 from mediacatch_s2t import (
-    PRESIGNED_URL, TRANSCRIPT_URL, UPDATE_STATUS_URL, PROCESSING_TIME_RATIO
+    URL, PRESIGNED_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT, PROCESSING_TIME_RATIO
 )
 
 
@@ -42,7 +42,7 @@ class Uploader:
 
     @property
     def _transcript_link(self):
-        return f"{TRANSCRIPT_URL}?id={self.file_id}&api_key={self.api_key}"
+        return f"{URL}{TRANSCRIPT_ENDPOINT}?id={self.file_id}&api_key={self.api_key}"
 
     def get_duration(self):
         """Get audio track duration of a file.
@@ -70,7 +70,7 @@ class Uploader:
 
     def _get_upload_url(self, mime_file):
         response = self._make_post_request(
-            url=PRESIGNED_URL,
+            url=f'{URL}{PRESIGNED_ENDPOINT}',
             json=mime_file,
             headers={
                 "Content-type": 'application/json',
@@ -98,7 +98,7 @@ class Uploader:
 
     def _get_transcript_link(self):
         self._make_post_request(
-            url=UPDATE_STATUS_URL,
+            url=f'{URL}{UPDATE_STATUS_ENDPOINT}',
             json={"id": self.file_id},
             headers={
                 "Content-type": 'application/json',

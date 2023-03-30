@@ -1,7 +1,7 @@
 from unittest import mock
 
 import responses
-from mediacatch_s2t import PRESIGNED_URL, TRANSCRIPT_URL, UPDATE_STATUS_URL
+from mediacatch_s2t import URL, PRESIGNED_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT
 from mediacatch_s2t.uploader import upload_and_get_transcription, Uploader
 
 
@@ -41,7 +41,7 @@ def test_upload_succeed(mock_pymedia, mock_getsize, mock_Path, mock_open):
     mock_pymedia.return_value.audio_tracks = [MockDuration]
 
     responses.add(
-        responses.POST, PRESIGNED_URL, status=200,
+        responses.POST, f'{URL}{PRESIGNED_ENDPOINT}', status=200,
         json={
             'url': URL_EXAMPLE,
             'fields': {'key': 'all fields we need'},
@@ -49,10 +49,10 @@ def test_upload_succeed(mock_pymedia, mock_getsize, mock_Path, mock_open):
         }
     )
     responses.add(
-        responses.POST, UPDATE_STATUS_URL, status=204
+        responses.POST, f'{URL}{UPDATE_STATUS_ENDPOINT}', status=204
     )
     responses.add(
-        responses.POST, TRANSCRIPT_URL, status=200
+        responses.POST, f'{URL}{TRANSCRIPT_ENDPOINT}', status=200
     )
     responses.add(
         responses.POST, URL_EXAMPLE, status=200
