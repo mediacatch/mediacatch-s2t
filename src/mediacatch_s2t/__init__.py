@@ -3,20 +3,25 @@
 """
 
 # Version of the mc-s2t-mediacatch_s2t
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 import os
 
-PRESIGNED_URL = (
-    os.environ.get('MEDIACATCH_PRESIGN_URL') or
-    'https://s2t.mediacatch.io/presigned-post-url'
+URL = (
+    os.environ.get('MEDIACATCH_URL') or
+    'https://s2t.mediacatch.io'
 )
-UPDATE_STATUS_URL = (
-    os.environ.get('MEDIACATCH_UPDATE_STATUS_URL') or
-    'https://s2t.mediacatch.io/upload-completed'
+
+PRESIGNED_ENDPOINT = (
+    os.environ.get('MEDIACATCH_PRESIGN_ENDPOINT') or
+    '/presigned-post-url'
 )
-TRANSCRIPT_URL = (
-    os.environ.get('MEDIACATCH_TRANSCRIPT_URL') or
-    'https://s2t.mediacatch.io/result'
+UPDATE_STATUS_ENDPOINT = (
+    os.environ.get('MEDIACATCH_UPDATE_STATUS_ENDPOINT') or
+    '/upload-completed'
+)
+TRANSCRIPT_ENDPOINT = (
+    os.environ.get('MEDIACATCH_TRANSCRIPT_ENDPOINT') or
+    '/result'
 )
 PROCESSING_TIME_RATIO = 0.1
