@@ -2,13 +2,20 @@ import json
 import os
 import pathlib
 
-import pymediainfo
 import requests
+import subprocess
+import json
+from typing import NamedTuple
+
 
 from mediacatch_s2t import (
     URL, PRESIGNED_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT, PROCESSING_TIME_RATIO
 )
 
+class FFProbeResult(NamedTuple):
+    return_code: int
+    json: str
+    error: str
 
 class UploaderException(Exception):
     pass
@@ -44,21 +51,34 @@ class Uploader:
     def _transcript_link(self):
         return f"{URL}{TRANSCRIPT_ENDPOINT}?id={self.file_id}&api_key={self.api_key}"
 
+    @staticmethod
+    def _ffprobe(file_path) -> FFProbeResult:
+        command_array = ["ffprobe",
+                        "-v", "quiet",
+                        "-print_format", "json",
+                        "-show_format",
+                        "-show_streams",
+                        file_path]
+        result = subprocess.run(command_array, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        return FFProbeResult(return_code=result.returncode,
+                            json=json.loads(result.stdout),
+                            error=result.stderr)
+
     def get_duration(self):
         """Get audio track duration of a file.
 
         :return
-        tuple: (bool, duration_in_miliseconds)
+        tuple: (duration_in_miliseconds, stream_json | error_msg)
         """
-        try:
-            mi = pymediainfo.MediaInfo.parse(self.file)
-            if not mi.audio_tracks:
-                return True, 0
-            return True, mi.audio_tracks[0].duration
-        except OSError:
-            return False, 0
-        except Exception:
-            return False, 0
+        probe = self._ffprobe(self.file)
+        if probe.return_code:
+            return 0, probe.error
+        else:
+            for stream in probe.json['streams']:
+                if stream['codec_type'] == 'audio':
+                    return float(stream['duration']) * 1000, stream
+            else:
+                return 0, "The file doesn't have an audio track"
 
     def estimated_result_time(self, audio_length=0):
         """Estimated processing time in seconds"""
@@ -119,10 +139,10 @@ class Uploader:
             result["message"] = "The file doesn't exist"
             return result
 
-        is_having_duration, file_duration = self.get_duration()
-        if is_having_duration and not file_duration:
+        file_duration, msg = self.get_duration()
+        if not file_duration:
             result["status"] = "error"
-            result["message"] = "The file doesn't have an audio track"
+            result["message"] = msg
             return result
 
         mime_file = {
