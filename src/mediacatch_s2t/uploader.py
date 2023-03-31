@@ -70,15 +70,18 @@ class Uploader:
         :return
         tuple: (duration_in_miliseconds, stream_json | error_msg)
         """
-        probe = self._ffprobe(self.file)
-        if probe.return_code:
-            return 0, probe.error
-        else:
-            for stream in probe.json['streams']:
-                if stream['codec_type'] == 'audio':
-                    return float(stream['duration']) * 1000, stream
+        try:
+            probe = self._ffprobe(self.file)
+            if probe.return_code:
+                return 0, probe.error
             else:
-                return 0, "The file doesn't have an audio track"
+                for stream in probe.json['streams']:
+                    if stream['codec_type'] == 'audio':
+                        return float(stream['duration']) * 1000, stream
+                else:
+                    return 0, "The file doesn't have an audio track"
+        except OSError as e:
+            return 0, 'FFmpeg not installed (sudo apt install ffmpeg)'
 
     def estimated_result_time(self, audio_length=0):
         """Estimated processing time in seconds"""
