@@ -77,7 +77,7 @@ class Uploader:
             else:
                 for stream in probe.json['streams']:
                     if stream['codec_type'] == 'audio':
-                        return float(stream['duration']) * 1000, stream
+                        return int(float(stream['duration']) * 1000), stream
                 else:
                     return 0, "The file doesn't have an audio track"
         except OSError as e:
