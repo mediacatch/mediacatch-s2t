@@ -20,7 +20,8 @@ jobs:
           pip install flake8
           pip install -e .
           pip install pytest-cov responses
-          sudo apt install ffmpeg
+      - uses: FedericoCarboni/setup-ffmpeg@v2
+        id: setup-ffmpeg
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
