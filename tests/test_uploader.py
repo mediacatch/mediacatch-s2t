@@ -10,12 +10,12 @@ def test_is_file_exist_mocked_return_true(mock_is_file):
     assert Uploader('fake file', 'fake key')._is_file_exist() is True
 
 
-@mock.patch("pymediainfo.MediaInfo.parse")
-def test_get_duration_mocked_return_value(mock_pymedia):
-    class MockDuration:
-        duration = 1000
-    mock_pymedia.return_value.audio_tracks = [MockDuration]
-    assert Uploader('fake file', 'fake key').get_duration() == (True, 1000)
+@mock.patch("subprocess.run")
+def test_get_duration_mocked_return_value(mock_subprocess):
+    mock_subprocess.return_value.returncode = 0
+    mock_subprocess.return_value.stdout = '{"streams": [{"codec_type": "audio", "duration": 1}]}'
+    mock_subprocess.return_value.stderr = None
+    assert Uploader('fake file', 'fake key').get_duration() == (1000, {'codec_type': 'audio', 'duration': 1})
 
 
 def test_estimated_result_time():
@@ -26,8 +26,8 @@ def test_estimated_result_time():
             read_data="bytes of data")
 @mock.patch("pathlib.Path")
 @mock.patch("os.path.getsize", return_value=100)
-@mock.patch("pymediainfo.MediaInfo.parse")
-def test_upload_succeed(mock_pymedia, mock_getsize, mock_Path, mock_open):
+@mock.patch("subprocess.run")
+def test_upload_succeed(mock_subprocess, mock_getsize, mock_Path, mock_open):
     URL_EXAMPLE = 'http://url-for-upload.example.com'
 
     def side_effect():
@@ -36,9 +36,9 @@ def test_upload_succeed(mock_pymedia, mock_getsize, mock_Path, mock_open):
     mock_Path.return_value.suffix = '.avi'
     mock_Path.return_value.is_file.side_effect = side_effect
 
-    class MockDuration:
-        duration = 100000
-    mock_pymedia.return_value.audio_tracks = [MockDuration]
+    mock_subprocess.return_value.returncode = 0
+    mock_subprocess.return_value.stdout = '{"streams": [{"codec_type": "audio", "duration": 100}]}'
+    mock_subprocess.return_value.stderr = None
 
     responses.add(
         responses.POST, f'{URL}{PRESIGNED_ENDPOINT}', status=200,
