@@ -8,17 +8,18 @@ from mediacatch_s2t import uploader
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog='mediacatch_s2t',
-        usage='%(prog)s [options] file api_key',
+        usage='%(prog)s [options] api_key file',
         description='Upload a media file and get the transcription from MediaCatch.'
     )
-    parser.add_argument("file", type=str, help="A media file.")
     parser.add_argument("api_key", type=str, help="MediaCatch API key.")
+    parser.add_argument("file", type=str, help="A media file.")
+    parser.add_argument("--language", type=str, default='da', help="The main language in the file.")
     args = parser.parse_args()
 
     console = Console()
     with console.status(
             "[bold green]Uploading file to MediaCatch..."):
-        result = uploader.upload_and_get_transcription(args.file, args.api_key)
+        result = uploader.upload_and_get_transcription(args.file, args.api_key, args.language)
         if result['status'] == 'error':
             sys.exit(
                 f"Error occurred:\n{result['message']}. "
