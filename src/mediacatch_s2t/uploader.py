@@ -22,9 +22,10 @@ class UploaderException(Exception):
 
 
 class Uploader:
-    def __init__(self, file, api_key):
+    def __init__(self, file, api_key, language='da'):
         self.file = file
         self.api_key = api_key
+        self.language = language
         self.file_id = None
 
     def _is_file_exist(self):
@@ -153,6 +154,7 @@ class Uploader:
             "filename": pathlib.Path(self.file).name,
             "file_ext": pathlib.Path(self.file).suffix,
             "filesize": os.path.getsize(self.file),
+            "language": self.language,
         }
         try:
             _upload_url = self._get_upload_url(mime_file)
@@ -176,5 +178,5 @@ class Uploader:
         return result
 
 
-def upload_and_get_transcription(file, api_key):
-    return Uploader(file, api_key).upload_file()
+def upload_and_get_transcription(file, api_key, language):
+    return Uploader(file, api_key, language).upload_file()

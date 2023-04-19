@@ -63,5 +63,5 @@ def test_upload_succeed(mock_subprocess, mock_getsize, mock_Path, mock_open):
         'status': 'uploaded',
         'url': 'https://s2t.mediacatch.io/result?id=some-id&api_key=fake-key'
     }
-    assert Uploader('fake-file', 'fake-key').upload_file() == expected_output
+    assert Uploader('fake-file', 'fake-key', 'fake-language').upload_file() == expected_output
 
