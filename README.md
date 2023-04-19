@@ -9,7 +9,7 @@ You can use it on your CLI
 ```bash
 pip install mediacatch_s2t
 
-python -m mediacatch_s2t <path/to/your/media/file> <api_key>
+python -m mediacatch_s2t <api_key> <path/to/your/media/file>
 ```
 
 Or import it as a module
