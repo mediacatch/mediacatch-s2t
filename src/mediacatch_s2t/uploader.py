@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 
 from mediacatch_s2t import (
-    URL, PRESIGNED_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT, PROCESSING_TIME_RATIO
+    URL, SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT, PROCESSING_TIME_RATIO
 )
 
 class FFProbeResult(NamedTuple):
@@ -21,7 +21,7 @@ class UploaderException(Exception):
     pass
 
 
-class Uploader:
+class UploaderBase:
     def __init__(self, file, api_key, language='da'):
         self.file = file
         self.api_key = api_key
@@ -94,7 +94,7 @@ class Uploader:
 
     def _get_upload_url(self, mime_file):
         response = self._make_post_request(
-            url=f'{URL}{PRESIGNED_ENDPOINT}',
+            url=f'{URL}{SINGLE_UPLOAD_ENDPOINT}',
             json=mime_file,
             headers={
                 "Content-type": 'application/json',
@@ -130,6 +130,15 @@ class Uploader:
             }
         )
         return self._transcript_link
+
+
+class Uploader(UploaderBase):
+    """Uploader Class
+
+    This class is to send a file to the API server.
+    The API server currently only allows file less than 4gb
+    to be sent with this upload class.
+    """
 
     def upload_file(self):
         result = {
@@ -176,6 +185,28 @@ class Uploader:
             "message": "The file has been uploaded."
         }
         return result
+
+
+class ChunkedFileUploader(UploaderBase):
+    """Multipart Uploader Class
+
+    This class is to split a bigfile into chunked files, and send them
+    with multipart upload method.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.chunk_size: int = 0
+
+    def split_file_into_chunks(self):
+        pass
+
+    def upload_chunks(self):
+        pass
+
+    def send_upload_completed_message(self):
+        pass
+
 
 
 def upload_and_get_transcription(file, api_key, language):

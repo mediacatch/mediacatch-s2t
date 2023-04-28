@@ -12,9 +12,13 @@ URL = (
     'https://s2t.mediacatch.io'
 )
 
-PRESIGNED_ENDPOINT = (
+SINGLE_UPLOAD_ENDPOINT = (
     os.environ.get('MEDIACATCH_PRESIGN_ENDPOINT') or
     '/presigned-post-url'
+)
+MULTIPLE_UPLOAD_ENDPOINT = (
+    os.environ.get('MEDIACATCH_PRESIGN_CHUNK_ENDPOINT') or
+    '/presigned-chunk-post-url'
 )
 UPDATE_STATUS_ENDPOINT = (
     os.environ.get('MEDIACATCH_UPDATE_STATUS_ENDPOINT') or

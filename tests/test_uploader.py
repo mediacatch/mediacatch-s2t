@@ -1,7 +1,7 @@
 from unittest import mock
 
 import responses
-from mediacatch_s2t import URL, PRESIGNED_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT
+from mediacatch_s2t import URL, SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT
 from mediacatch_s2t.uploader import upload_and_get_transcription, Uploader
 
 
@@ -41,7 +41,7 @@ def test_upload_succeed(mock_subprocess, mock_getsize, mock_Path, mock_open):
     mock_subprocess.return_value.stderr = None
 
     responses.add(
-        responses.POST, f'{URL}{PRESIGNED_ENDPOINT}', status=200,
+        responses.POST, f'{URL}{SINGLE_UPLOAD_ENDPOINT}', status=200,
         json={
             'url': URL_EXAMPLE,
             'fields': {'key': 'all fields we need'},
