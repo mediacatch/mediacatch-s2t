@@ -16,9 +16,17 @@ SINGLE_UPLOAD_ENDPOINT = (
     os.environ.get('MEDIACATCH_PRESIGN_ENDPOINT') or
     '/presigned-post-url'
 )
-MULTIPLE_UPLOAD_ENDPOINT = (
-    os.environ.get('MEDIACATCH_PRESIGN_CHUNK_ENDPOINT') or
-    '/presigned-chunk-post-url'
+MULTIPART_UPLOAD_CREATE_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_CREATE_ENDPOINT') or
+    '/multipart-upload/id'
+)
+MULTIPART_UPLOAD_URL_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_URL_ENDPOINT') or
+    '/multipart-upload/url'
+)
+MULTIPART_UPLOAD_COMPLETE_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_COMPLETE_ENDPOINT') or
+    '/multipart-upload/complete'
 )
 UPDATE_STATUS_ENDPOINT = (
     os.environ.get('MEDIACATCH_UPDATE_STATUS_ENDPOINT') or
