@@ -9,16 +9,31 @@ from typing import NamedTuple
 
 
 from mediacatch_s2t import (
-    URL, SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT, PROCESSING_TIME_RATIO
+    URL,
+    SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT,
+    MULTIPART_UPLOAD_CREATE_ENDPOINT, MULTIPART_UPLOAD_URL_ENDPOINT,
+    MULTIPART_UPLOAD_COMPLETE_ENDPOINT,
+    PROCESSING_TIME_RATIO
 )
+
 
 class FFProbeResult(NamedTuple):
     return_code: int
     json: str
     error: str
 
+
 class UploaderException(Exception):
-    pass
+    message = "Error when the uploader makes a post request."
+
+    def __init__(self, cause=None):
+        self.cause = cause
+
+    def __str__(self):
+        if self.cause:
+            return "{}: {}".format(self.message, str(self.cause))
+        else:
+            return self.message
 
 
 class UploaderBase:
@@ -46,7 +61,7 @@ class UploaderBase:
                 raise Exception(msg)
             return response
         except Exception as e:
-            raise UploaderException(str(e))
+            raise UploaderException from e
 
     @property
     def _transcript_link(self):
@@ -197,6 +212,40 @@ class ChunkedFileUploader(UploaderBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.chunk_size: int = 0
+        self.create_endpoint: str = f"{URL}{MULTIPART_UPLOAD_CREATE_ENDPOINT}"
+        self.signed_url_endpoint: str = f"{URL}{MULTIPART_UPLOAD_URL_ENDPOINT}"
+        self.complete_endpoint: str = f"{URL}{MULTIPART_UPLOAD_COMPLETE_ENDPOINT}"
+        self.headers: dict = self._get_headers()
+        self.result = {
+            "url": "",
+            "status": "",
+            "estimated_processing_time": 0,
+            "message": ""
+        }
+
+    def _get_headers(self) -> dict:
+        return {
+            "Content-type": "application/json",
+            "X-API-KEY": self.api_key
+        }
+
+    def _set_result_error_message(self, msg) -> None:
+        self.result["status"] = "error"
+        self.result["message"] = msg
+
+    def create_multipart_upload(self, mime_file: dict):
+        response = self._make_post_request(
+            url=self.create_endpoint,
+            headers=self.headers,
+            json=mime_file
+        )
+        data: dict = response.json()
+        return {
+            "chunk_maxsize": data["chunk_maxsize"],
+            "file_id": data["file_id"],
+            "total_chunks": data["total_chunks"],
+            "upload_id": data["upload_id"]
+        }
 
     def split_file_into_chunks(self):
         pass
@@ -207,6 +256,42 @@ class ChunkedFileUploader(UploaderBase):
     def send_upload_completed_message(self):
         pass
 
+    def upload_file(self):
+        if not self._is_file_exist():
+            self._set_result_error_message("The file doesn't exist")
+            return self.result
+
+        file_duration, msg = self.get_duration()
+        if not file_duration:
+            self._set_result_error_message(msg)
+            return self.result
+
+        mime_file = {
+            "duration": file_duration,
+            "filename": pathlib.Path(self.file).name,
+            "file_ext": pathlib.Path(self.file).suffix,
+            "filesize": os.path.getsize(self.file),
+            "language": self.language,
+        }
+        try:
+            meta = self.create_multipart_upload(mime_file)
+            chunk_maxsize = meta["chunk_maxsize"],
+            file_id = meta["file_id"],
+            total_chunks = meta["total_chunks"],
+            upload_id = meta["upload_id"]
+
+
+        except UploaderException as e:
+            self._set_result_error_message(str(e))
+            return self.result
+
+        self.result = {
+            "url": "",
+            "status": "uploaded",
+            "estimated_processing_time": self.estimated_result_time(file_duration),
+            "message": "The file has been uploaded."
+        }
+        return self.result
 
 
 def upload_and_get_transcription(file, api_key, language):
