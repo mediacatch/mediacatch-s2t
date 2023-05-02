@@ -14,7 +14,7 @@ from mediacatch_s2t import (
     SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT,
     MULTIPART_UPLOAD_CREATE_ENDPOINT, MULTIPART_UPLOAD_URL_ENDPOINT,
     MULTIPART_UPLOAD_COMPLETE_ENDPOINT,
-    PROCESSING_TIME_RATIO
+    PROCESSING_TIME_RATIO, CHUNK_SIZE_MIN
 )
 
 
@@ -46,6 +46,13 @@ class UploaderBase:
 
     def _is_file_exist(self):
         return pathlib.Path(self.file).is_file()
+
+    def is_multipart_upload(self) -> bool:
+        if self._is_file_exist():
+            filesize = os.path.getsize(self.file)
+            if filesize > CHUNK_SIZE_MIN:
+                return True
+        return False
 
     def _is_response_error(self, response):
         if response.status_code >= 400:
@@ -405,4 +412,8 @@ class ChunkedFileUploader(UploaderBase):
 
 
 def upload_and_get_transcription(file, api_key, language):
-    return ChunkedFileUploader(file, api_key, language).upload_file()
+    is_multipart_upload = UploaderBase(
+        file, api_key, language).is_multipart_upload()
+    if is_multipart_upload:
+        return ChunkedFileUploader(file, api_key, language).upload_file()
+    return Uploader(file, api_key, language).upload_file()
