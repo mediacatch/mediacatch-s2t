@@ -1,3 +1,6 @@
+from unittest import mock
+
+import pytest
 import responses
 
 from mediacatch_s2t import URL, MULTIPART_UPLOAD_CREATE_ENDPOINT
@@ -10,10 +13,6 @@ class TestMultipartUpload:
     filesize = (5 * chunk_maxsize) + 10000
     file_id = "644f6676997bc2477563246e"
     upload_id = "2~iRldDSPjP1cJCXg-7NmR9Sd4xpX_Cii"
-    file = ChunkedFileUploader(
-        file='file-test.mp4',
-        api_key='test-key'
-    )
     mime_file = {
         "duration": 1000,
         "filename": "file-test",
@@ -21,6 +20,32 @@ class TestMultipartUpload:
         "filesize": filesize,
         "language": "da",
     }
+
+    @pytest.fixture(autouse=True)
+    def _mock_pathlib_path(self):
+        with mock.patch("pathlib.Path") as mock_Path:
+            def side_effect():
+                return True
+            mock_Path.return_value.name = 'name'
+            mock_Path.return_value.suffix = '.avi'
+            mock_Path.return_value.is_file.side_effect = side_effect
+            yield mock_Path
+
+    @pytest.fixture(autouse=True)
+    def _mock_os_getsize(self):
+        with mock.patch("os.path.getsize") as mock_getsize:
+            mock_getsize.return_value = self.filesize
+            yield mock_getsize
+
+    @pytest.fixture(autouse=True)
+    def _mock_create_temp_dir_path(self):
+        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader._create_temp_dir_path") as mock_mkdtemp:
+            mock_mkdtemp.return_value = "temp_folder"
+            yield mock_mkdtemp
+    @pytest.fixture(autouse=True)
+    def _mock_builtins_open(self):
+        with mock.patch("builtins.open", mock.mock_open(read_data="data")) as mock_open:
+            yield mock_open
 
     @responses.activate
     def test_make_multipart_call_return_success(self):
@@ -35,7 +60,11 @@ class TestMultipartUpload:
                 "upload_id": self.upload_id
             }
         )
-        result = self.file.create_multipart_upload(self.mime_file)
+        file = ChunkedFileUploader(
+            file='file-test.mp4',
+            api_key='test-key'
+        )
+        result = file.create_multipart_upload(self.mime_file)
         assert result == {
             "file_id": self.file_id,
             "chunk_maxsize": self.chunk_maxsize,
