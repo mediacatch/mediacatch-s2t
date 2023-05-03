@@ -265,8 +265,8 @@ class ChunkedFileUploader(UploaderBase):
         return str(filepath)
 
     def _get_latest_chunk_size(self) -> int:
-        is_even = self.filesize % self.chunk_maxsize
-        if not is_even:
+        is_odd = self.filesize % self.chunk_maxsize
+        if is_odd:
             total_chunks_filesize_before_the_last = (
                     self.chunk_maxsize * (self.total_chunks - 1)
             )
@@ -315,11 +315,12 @@ class ChunkedFileUploader(UploaderBase):
         self.temp_dir = self._create_temp_dir_path()
         with open(self.file, 'rb') as f:
             part_number = 0
+            latest_chunk_size = self._get_latest_chunk_size()
             while True:
                 part_number += 1
                 chunk_size = self.chunk_maxsize
                 if part_number == self.total_chunks:
-                    chunk_size = self._get_latest_chunk_size()
+                    chunk_size = latest_chunk_size
                 chunk = f.read(chunk_size)
                 if not chunk:
                     break
