@@ -13,9 +13,17 @@ def test_is_file_exist_mocked_return_true(mock_is_file):
 @mock.patch("subprocess.run")
 def test_get_duration_mocked_return_value(mock_subprocess):
     mock_subprocess.return_value.returncode = 0
-    mock_subprocess.return_value.stdout = '{"streams": [{"codec_type": "audio", "duration": 1}]}'
+    mock_subprocess.return_value.stdout = '{"streams": [{"codec_type": "audio", "duration": "1"}]}'
     mock_subprocess.return_value.stderr = None
-    assert Uploader('fake file', 'fake key').get_duration() == (1000, {'codec_type': 'audio', 'duration': 1})
+    assert Uploader('fake file', 'fake key').get_duration() == (1000, {'codec_type': 'audio', 'duration': '1'})
+
+
+@mock.patch("subprocess.run")
+def test_get_duration_audio_not_available_mocked_return_value(mock_subprocess):
+    mock_subprocess.return_value.returncode = 0
+    mock_subprocess.return_value.stdout = '{"streams": [{"codec_type": "audio"}], "format": {"duration": "1"}}'
+    mock_subprocess.return_value.stderr = None
+    assert Uploader('fake file', 'fake key').get_duration() == (1000, {"duration": "1"})
 
 
 def test_estimated_result_time():
