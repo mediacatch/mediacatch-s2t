@@ -8,7 +8,7 @@ from mediacatch_s2t import (
     MULTIPART_UPLOAD_COMPLETE_ENDPOINT,
     UPDATE_STATUS_ENDPOINT
 )
-from mediacatch_s2t.uploader import ChunkedFileUploader
+from mediacatch_s2t.uploader import ChunkedFileUploader, UploaderBase
 
 
 class TestMultipartUpload:
@@ -159,6 +159,12 @@ class TestMultipartUpload:
         latest_chunk_size = chunked_file._get_latest_chunk_size()
         assert latest_chunk_size == 10000
 
+        chunked_file.chunk_maxsize = self.chunk_maxsize
+        chunked_file.filesize = self.chunk_maxsize
+        chunked_file.total_chunks = 1
+        latest_chunk_size = chunked_file._get_latest_chunk_size()
+        assert latest_chunk_size == self.chunk_maxsize
+
     @responses.activate
     def test_get_signed_url_return_url(self):
         responses.add(
@@ -250,3 +256,50 @@ class TestMultipartUpload:
             "estimated_processing_time": 10,
             "message": "The file has been uploaded."
         }
+
+
+class TestUploaderBaseMethod:
+    @pytest.fixture()
+    def _mock_is_file_exist_true(self):
+        with mock.patch(
+                "mediacatch_s2t.uploader.UploaderBase._is_file_exist") as mocker:
+            mocker.return_value = True
+            yield mocker
+
+    @mock.patch("os.path.getsize", return_value=1000000000)
+    def test_is_multipart_upload_return_true(self, mocker, _mock_is_file_exist_true):
+        file = UploaderBase("file-test.mp4", "test-key")
+        assert file.is_multipart_upload() is True
+
+    @mock.patch("os.path.getsize", return_value=10)
+    def test_is_multipart_upload_return_false(self, mocker, _mock_is_file_exist_true):
+        file = UploaderBase("file-test.mp4", "test-key")
+        assert file.is_multipart_upload() is False
+
+    def test_is_multipart_upload_file_not_exists(self):
+        file = UploaderBase("file-test.mp4", "test-key")
+        assert file.is_multipart_upload() is False
+
+
+    def test_is_response_error_return_true(self):
+        response = mock.Mock()
+        response.status_code = 401
+        response.json.return_value = {"message": "an error 401 test message"}
+
+        file = UploaderBase("file-test.mp4", "test-key")
+        result = file._is_response_error(response)
+        assert result == (True, "an error 401 test message")
+
+        response.status_code = 500
+        response.json.return_value = {"message": "an error 500 test message"}
+        result = file._is_response_error(response)
+        assert result == (True, "an error 500 test message")
+
+    def test_make_post_request_raise_exception(self):
+        file = UploaderBase("file-test.mp4", "test-key")
+
+        with pytest.raises(Exception) as exc_info:
+            file._make_post_request()
+        assert str(exc_info.value) == "Error from uploader module: Error during post request"
+
+

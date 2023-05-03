@@ -25,7 +25,7 @@ class FFProbeResult(NamedTuple):
 
 
 class UploaderException(Exception):
-    message = "Error from uploader module."
+    message = "Error from uploader module"
 
     def __init__(self, cause=None):
         self.cause = cause
