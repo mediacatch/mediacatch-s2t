@@ -82,7 +82,7 @@ class Uploader:
                             return int(float(stream['duration']) * 1000), stream
                     else:
                         return 0, "The file doesn't have an audio track"
-                except:
+                except Exception:
                     if 'duration' in probe.json['format']:
                         return int(float(probe.json['format']['duration']) * 1000), probe.json['format']
                     else:
