@@ -12,9 +12,21 @@ URL = (
     'https://s2t.mediacatch.io'
 )
 
-PRESIGNED_ENDPOINT = (
+SINGLE_UPLOAD_ENDPOINT = (
     os.environ.get('MEDIACATCH_PRESIGN_ENDPOINT') or
     '/presigned-post-url'
+)
+MULTIPART_UPLOAD_CREATE_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_CREATE_ENDPOINT') or
+    '/multipart-upload/id'
+)
+MULTIPART_UPLOAD_URL_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_URL_ENDPOINT') or
+    '/multipart-upload/url'
+)
+MULTIPART_UPLOAD_COMPLETE_ENDPOINT = (
+    os.environ.get('MEDIACATCH_MULTIPART_UPLOAD_COMPLETE_ENDPOINT') or
+    '/multipart-upload/complete'
 )
 UPDATE_STATUS_ENDPOINT = (
     os.environ.get('MEDIACATCH_UPDATE_STATUS_ENDPOINT') or
@@ -25,3 +37,4 @@ TRANSCRIPT_ENDPOINT = (
     '/result'
 )
 PROCESSING_TIME_RATIO = 0.1
+CHUNK_SIZE_MIN = 50 * 1024 * 1024
