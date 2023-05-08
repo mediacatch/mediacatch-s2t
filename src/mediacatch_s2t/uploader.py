@@ -1,9 +1,9 @@
+import abc
 import os
 import pathlib
 import shutil
 import tempfile
 import threading
-from abc import abstractmethod
 
 import requests
 import subprocess
@@ -38,7 +38,7 @@ class UploaderException(Exception):
             return self.message
 
 
-class UploaderBase:
+class UploaderBase(metaclass=abc.ABCMeta):
     def __init__(self, file, api_key, language='da'):
         self.file = file
         self.api_key = api_key
@@ -171,7 +171,7 @@ class UploaderBase:
         )
         return self._transcript_link
 
-    @abstractmethod
+    @abc.abstractmethod
     def upload_file(self):
         result = {
             "url": "",
@@ -449,7 +449,7 @@ class ChunkedFileUploader(UploaderBase):
 
 
 def upload_and_get_transcription(file, api_key, language):
-    is_multipart_upload = UploaderBase(
+    is_multipart_upload = Uploader(
         file, api_key, language).is_multipart_upload()
     if is_multipart_upload:
         return ChunkedFileUploader(file, api_key, language).upload_file()
