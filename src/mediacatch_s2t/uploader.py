@@ -71,7 +71,8 @@ class UploaderBase:
             if not is_error:
                 break
         if is_error:
-            if not (url := kwargs.get('url')):
+            url = kwargs.get('url')
+            if not url:
                 url, *rest = args
             raise UploaderException(
                 f"Error during post request {url}; {msg}"
