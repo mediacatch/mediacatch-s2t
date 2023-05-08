@@ -16,7 +16,6 @@ classifiers = [
 ]
 keywords = ["mediacatch", "speech to text", "uploader", "nlp"]
 dependencies = [
-    "pymediainfo",
     "requests",
     "rich"
 ]
