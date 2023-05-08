@@ -8,7 +8,8 @@ from mediacatch_s2t import (
     MULTIPART_UPLOAD_COMPLETE_ENDPOINT,
     UPDATE_STATUS_ENDPOINT
 )
-from mediacatch_s2t.uploader import ChunkedFileUploader, UploaderBase
+from mediacatch_s2t.uploader import (
+    ChunkedFileUploader, UploaderBase, UploaderException)
 
 
 class TestMultipartUpload:
@@ -182,7 +183,7 @@ class TestMultipartUpload:
             file='file-test.mp4',
             api_key='test-key'
         )
-        result = file.get_signed_url(1)
+        result = file._get_signed_url(1)
         assert result == "signed-upload-url"
 
     @responses.activate
@@ -200,7 +201,7 @@ class TestMultipartUpload:
         filepath = chunked_file._get_file_path("1")
         assert filepath == "temp_folder/1"
 
-        etag = chunked_file.upload_chunks(1, "http://url-for-upoading.file")
+        etag = chunked_file._upload_chunk_to_bucket(1, "http://url-for-upoading.file")
         assert etag == "a-test-etag"
 
 
@@ -238,10 +239,10 @@ class TestMultipartUpload:
 
         chunked_file.split_file_into_chunks()
 
-        url = chunked_file.get_signed_url(1)
+        url = chunked_file._get_signed_url(1)
         assert url == "http://url-for-upoading.file"
 
-        etag = chunked_file.upload_chunks(1, "http://url-for-upoading.file")
+        etag = chunked_file._upload_chunk_to_bucket(1, "http://url-for-upoading.file")
         assert etag == "a-test-etag"
 
         assert chunked_file.complete_the_upload() is True
@@ -295,11 +296,20 @@ class TestUploaderBaseMethod:
         result = file._is_response_error(response)
         assert result == (True, "an error 500 test message")
 
+    @responses.activate
     def test_make_post_request_raise_exception(self):
+        responses.add(
+            responses.POST,
+            url="http://test-500",
+            json={"message": "test error 500"},
+            status=500
+        )
+
         file = UploaderBase("file-test.mp4", "test-key")
 
-        with pytest.raises(Exception) as exc_info:
-            file._make_post_request()
-        assert str(exc_info.value) == "Error from uploader module: Error during post request"
-
-
+        with pytest.raises(UploaderException) as exc_info:
+            file._make_post_request(url="http://test-500")
+        assert str(exc_info.value) == (
+            "Error from uploader module: Error during post request "
+            "http://test-500; test error 500"
+        )

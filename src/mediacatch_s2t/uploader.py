@@ -1,8 +1,8 @@
-import json
 import os
 import pathlib
 import shutil
 import tempfile
+import threading
 
 import requests
 import subprocess
@@ -344,7 +344,7 @@ class ChunkedFileUploader(UploaderBase):
                 )
         return None
 
-    def get_signed_url(self, part_number: int) -> str:
+    def _get_signed_url(self, part_number: int) -> str:
         response = self._make_post_request(
             url=self.endpoint_signed_url,
             headers=self.headers,
@@ -357,13 +357,19 @@ class ChunkedFileUploader(UploaderBase):
         data: dict = response.json()
         return data["url"]
 
-    def upload_chunks(self, part_number: int, url: str) -> str:
+    def _upload_chunk_to_bucket(self, part_number: int, url: str) -> str:
         filepath: str = self._get_file_path(str(part_number))
         with open(filepath, 'rb') as f:
             file_data = f.read()
         response: requests.Response = requests.put(url=url, data=file_data)
         etag: str = response.headers['ETag']
         return etag
+
+    def upload_part(self, part_number: int) -> None:
+        url = self._get_signed_url(part_number)
+        etag = self._upload_chunk_to_bucket(part_number, url)
+        self.etags.append({'ETag': etag, 'PartNumber': part_number})
+        return None
 
     def complete_the_upload(self) -> bool:
         response: requests.Response = self._make_post_request(
@@ -404,10 +410,15 @@ class ChunkedFileUploader(UploaderBase):
                 upload_id=meta["upload_id"]
             )
             self.split_file_into_chunks()
+
+            threads = []
             for part in range(1, self.total_chunks + 1):
-                url = self.get_signed_url(part)
-                etag = self.upload_chunks(part, url)
-                self.etags.append({'ETag': etag, 'PartNumber': part})
+                thread = threading.Thread(target=self.upload_part, args=(part,))
+                threads.append(thread)
+                thread.start()
+            for thread in threads:
+                thread.join()
+
             self.complete_the_upload()
             transcript_link = self._get_transcript_link()
             self._tear_down()
