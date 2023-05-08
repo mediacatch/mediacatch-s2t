@@ -3,6 +3,7 @@ import pathlib
 import shutil
 import tempfile
 import threading
+from abc import abstractmethod
 
 import requests
 import subprocess
@@ -169,6 +170,16 @@ class UploaderBase:
             }
         )
         return self._transcript_link
+
+    @abstractmethod
+    def upload_file(self):
+        result = {
+            "url": "",
+            "status": "uploaded",
+            "estimated_processing_time": 0,
+            "message": "The file has been uploaded."
+        }
+        return result
 
 
 class Uploader(UploaderBase):
