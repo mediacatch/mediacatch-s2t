@@ -356,6 +356,27 @@ class ChunkedFileUploader(UploaderBase):
                 )
         return None
 
+    def chop_and_upload_chunk(self) -> None:
+        threads = []
+        with open(self.file, 'rb') as f:
+            part_number = 0
+            latest_chunk_size = self._get_latest_chunk_size()
+            while True:
+                part_number += 1
+                chunk_size = self.chunk_maxsize
+                if part_number == self.total_chunks:
+                    chunk_size = latest_chunk_size
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                thread = threading.Thread(target=self.upload_part,
+                                          args=(part_number, chunk))
+                threads.append(thread)
+                thread.start()
+        for thread in threads:
+            thread.join()
+        return None
+
     def _get_signed_url(self, part_number: int) -> str:
         response = self._make_post_request(
             url=self.endpoint_signed_url,
@@ -377,9 +398,14 @@ class ChunkedFileUploader(UploaderBase):
         etag: str = response.headers['ETag']
         return etag
 
-    def upload_part(self, part_number: int) -> None:
+    def _upload_data_chunk_to_bucket(self, url: str, file_data: bytes) -> str:
+        response: requests.Response = requests.put(url=url, data=file_data)
+        etag: str = response.headers['ETag']
+        return etag
+
+    def upload_part(self, part_number: int, file_data: bytes) -> None:
         url = self._get_signed_url(part_number)
-        etag = self._upload_chunk_to_bucket(part_number, url)
+        etag = self._upload_data_chunk_to_bucket(url, file_data)
         self.etags.append({'ETag': etag, 'PartNumber': part_number})
         return None
 
@@ -421,19 +447,10 @@ class ChunkedFileUploader(UploaderBase):
                 total_chunks=meta["total_chunks"],
                 upload_id=meta["upload_id"]
             )
-            self.split_file_into_chunks()
 
-            threads = []
-            for part in range(1, self.total_chunks + 1):
-                thread = threading.Thread(target=self.upload_part, args=(part,))
-                threads.append(thread)
-                thread.start()
-            for thread in threads:
-                thread.join()
-
+            self.chop_and_upload_chunk()
             self.complete_the_upload()
             transcript_link = self._get_transcript_link()
-            self._tear_down()
         except Exception as e:
             self._set_result_error_message(str(e))
             return self.result
