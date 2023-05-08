@@ -9,7 +9,7 @@ from mediacatch_s2t import (
     UPDATE_STATUS_ENDPOINT
 )
 from mediacatch_s2t.uploader import (
-    ChunkedFileUploader, UploaderBase, UploaderException)
+    ChunkedFileUploader, Uploader, UploaderException)
 
 
 class TestMultipartUpload:
@@ -259,26 +259,26 @@ class TestMultipartUpload:
         }
 
 
-class TestUploaderBaseMethod:
+class TestUploaderMethod:
     @pytest.fixture()
     def _mock_is_file_exist_true(self):
         with mock.patch(
-                "mediacatch_s2t.uploader.UploaderBase._is_file_exist") as mocker:
+                "mediacatch_s2t.uploader.Uploader._is_file_exist") as mocker:
             mocker.return_value = True
             yield mocker
 
     @mock.patch("os.path.getsize", return_value=1000000000)
     def test_is_multipart_upload_return_true(self, mocker, _mock_is_file_exist_true):
-        file = UploaderBase("file-test.mp4", "test-key")
+        file = Uploader("file-test.mp4", "test-key")
         assert file.is_multipart_upload() is True
 
     @mock.patch("os.path.getsize", return_value=10)
     def test_is_multipart_upload_return_false(self, mocker, _mock_is_file_exist_true):
-        file = UploaderBase("file-test.mp4", "test-key")
+        file = Uploader("file-test.mp4", "test-key")
         assert file.is_multipart_upload() is False
 
     def test_is_multipart_upload_file_not_exists(self):
-        file = UploaderBase("file-test.mp4", "test-key")
+        file = Uploader("file-test.mp4", "test-key")
         assert file.is_multipart_upload() is False
 
 
@@ -287,7 +287,7 @@ class TestUploaderBaseMethod:
         response.status_code = 401
         response.json.return_value = {"message": "an error 401 test message"}
 
-        file = UploaderBase("file-test.mp4", "test-key")
+        file = Uploader("file-test.mp4", "test-key")
         result = file._is_response_error(response)
         assert result == (True, "an error 401 test message")
 
@@ -305,7 +305,7 @@ class TestUploaderBaseMethod:
             status=500
         )
 
-        file = UploaderBase("file-test.mp4", "test-key")
+        file = Uploader("file-test.mp4", "test-key")
 
         with pytest.raises(UploaderException) as exc_info:
             file._make_post_request(url="http://test-500")
