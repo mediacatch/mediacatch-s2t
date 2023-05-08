@@ -62,14 +62,21 @@ class UploaderBase:
         return False, ''
 
     def _make_post_request(self, *args, **kwargs):
-        try:
+        """Make post request with retry mechanism."""
+        call_limit = 3
+        is_error, msg = True, "Have not made a request call."
+        for _call in range(call_limit):
             response = requests.post(*args, **kwargs)
             is_error, msg = self._is_response_error(response)
-            if is_error:
-                raise Exception(msg)
-            return response
-        except Exception as e:
-            raise UploaderException("Error during post request") from e
+            if not is_error:
+                break
+        if is_error:
+            if not (url := kwargs.get('url')):
+                url, *rest = args
+            raise UploaderException(
+                f"Error during post request {url}; {msg}"
+            )
+        return response
 
     @property
     def _transcript_link(self):
