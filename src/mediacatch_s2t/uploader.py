@@ -1,8 +1,9 @@
-import json
+import abc
 import os
 import pathlib
 import shutil
 import tempfile
+import threading
 
 import requests
 import subprocess
@@ -37,7 +38,7 @@ class UploaderException(Exception):
             return self.message
 
 
-class UploaderBase:
+class UploaderBase(metaclass=abc.ABCMeta):
     def __init__(self, file, api_key, language='da'):
         self.file = file
         self.api_key = api_key
@@ -62,14 +63,22 @@ class UploaderBase:
         return False, ''
 
     def _make_post_request(self, *args, **kwargs):
-        try:
+        """Make post request with retry mechanism."""
+        call_limit = 3
+        is_error, msg = True, "Have not made a request call."
+        for _call in range(call_limit):
             response = requests.post(*args, **kwargs)
             is_error, msg = self._is_response_error(response)
-            if is_error:
-                raise Exception(msg)
-            return response
-        except Exception as e:
-            raise UploaderException("Error during post request") from e
+            if not is_error:
+                break
+        if is_error:
+            url = kwargs.get('url')
+            if not url:
+                url, *rest = args
+            raise UploaderException(
+                f"Error during post request {url}; {msg}"
+            )
+        return response
 
     @property
     def _transcript_link(self):
@@ -123,25 +132,6 @@ class UploaderBase:
         processing_time = PROCESSING_TIME_RATIO * audio_length
         return round(processing_time / 1000)
 
-    def _get_upload_url(self, mime_file):
-        response = self._make_post_request(
-            url=f'{URL}{SINGLE_UPLOAD_ENDPOINT}',
-            json=mime_file,
-            headers={
-                "Content-type": 'application/json',
-                "X-API-KEY": self.api_key
-            }
-        )
-        response_data = json.loads(response.text)
-        url = response_data.get('url')
-        data = response_data.get('fields')
-        _id = response_data.get('id')
-        return {
-            "url": url,
-            "fields": data,
-            "id": _id
-        }
-
     def _post_file(self, url, data):
         with open(self.file, 'rb') as f:
             response = self._make_post_request(
@@ -162,6 +152,16 @@ class UploaderBase:
         )
         return self._transcript_link
 
+    @abc.abstractmethod
+    def upload_file(self):
+        result = {
+            "url": "",
+            "status": "uploaded",
+            "estimated_processing_time": 0,
+            "message": "The file has been uploaded."
+        }
+        return result
+
 
 class Uploader(UploaderBase):
     """Uploader Class
@@ -170,6 +170,25 @@ class Uploader(UploaderBase):
     The API server currently only allows file less than 4gb
     to be sent with this upload class.
     """
+
+    def _get_upload_url(self, mime_file):
+        response = self._make_post_request(
+            url=f'{URL}{SINGLE_UPLOAD_ENDPOINT}',
+            json=mime_file,
+            headers={
+                "Content-type": 'application/json',
+                "X-API-KEY": self.api_key
+            }
+        )
+        response_data = json.loads(response.text)
+        url = response_data.get('url')
+        data = response_data.get('fields')
+        _id = response_data.get('id')
+        return {
+            "url": url,
+            "fields": data,
+            "id": _id
+        }
 
     def upload_file(self):
         result = {
@@ -242,7 +261,6 @@ class ChunkedFileUploader(UploaderBase):
         self.endpoint_complete: str = f"{URL}{MULTIPART_UPLOAD_COMPLETE_ENDPOINT}"
         self.headers: dict = self._get_headers()
 
-        self.temp_dir: str = ""
         self.etags: list = []
 
         self.result = {
@@ -258,36 +276,6 @@ class ChunkedFileUploader(UploaderBase):
             "X-API-KEY": self.api_key
         }
 
-    def _create_temp_dir_path(self) -> str:
-        prefix = 'mc_s2t_'
-        if self.file_id:
-            prefix += f"{self.file_id}_"
-        temporary_directory = tempfile.mkdtemp(prefix=prefix)
-        return temporary_directory
-
-    def _get_file_path(self, filename: str) -> str:
-        temp_dir = pathlib.Path(self.temp_dir)
-        filepath = temp_dir / filename
-        return str(filepath)
-
-    def _get_latest_chunk_size(self) -> int:
-        is_odd = self.filesize % self.chunk_maxsize
-        if is_odd:
-            total_chunks_filesize_before_the_last = (
-                    self.chunk_maxsize * (self.total_chunks - 1)
-            )
-            last_chunk_filesize = (
-                    self.filesize - total_chunks_filesize_before_the_last
-            )
-        else:
-            last_chunk_filesize = self.chunk_maxsize
-        return last_chunk_filesize
-
-    def _write_chunk_to_temp_file(self, chunk: bytes, filepath: str) -> None:
-        with open(filepath, 'wb') as f:
-            f.write(chunk)
-        return None
-
     def _set_result_error_message(self, msg) -> None:
         self.result["status"] = "error"
         self.result["message"] = msg
@@ -299,9 +287,6 @@ class ChunkedFileUploader(UploaderBase):
         self.total_chunks = total_chunks
         self.upload_id = upload_id
         return None
-
-    def _tear_down(self):
-        shutil.rmtree(self.temp_dir)
 
     def create_multipart_upload(self, mime_file: dict) -> dict:
         response = self._make_post_request(
@@ -317,27 +302,25 @@ class ChunkedFileUploader(UploaderBase):
             "upload_id": data["upload_id"]
         }
 
-    def split_file_into_chunks(self) -> None:
-        self.temp_dir = self._create_temp_dir_path()
+    def chop_and_upload_chunk(self) -> None:
+        threads = []
         with open(self.file, 'rb') as f:
             part_number = 0
-            latest_chunk_size = self._get_latest_chunk_size()
             while True:
                 part_number += 1
                 chunk_size = self.chunk_maxsize
-                if part_number == self.total_chunks:
-                    chunk_size = latest_chunk_size
                 chunk = f.read(chunk_size)
                 if not chunk:
                     break
-
-                self._write_chunk_to_temp_file(
-                    chunk=chunk,
-                    filepath=self._get_file_path(str(part_number))
-                )
+                thread = threading.Thread(target=self.upload_part,
+                                          args=(part_number, chunk))
+                threads.append(thread)
+                thread.start()
+        for thread in threads:
+            thread.join()
         return None
 
-    def get_signed_url(self, part_number: int) -> str:
+    def _get_signed_url(self, part_number: int) -> str:
         response = self._make_post_request(
             url=self.endpoint_signed_url,
             headers=self.headers,
@@ -350,13 +333,16 @@ class ChunkedFileUploader(UploaderBase):
         data: dict = response.json()
         return data["url"]
 
-    def upload_chunks(self, part_number: int, url: str) -> str:
-        filepath: str = self._get_file_path(str(part_number))
-        with open(filepath, 'rb') as f:
-            file_data = f.read()
+    def _upload_data_chunk_to_bucket(self, url: str, file_data: bytes) -> str:
         response: requests.Response = requests.put(url=url, data=file_data)
         etag: str = response.headers['ETag']
         return etag
+
+    def upload_part(self, part_number: int, file_data: bytes) -> None:
+        url = self._get_signed_url(part_number)
+        etag = self._upload_data_chunk_to_bucket(url, file_data)
+        self.etags.append({'ETag': etag, 'PartNumber': part_number})
+        return None
 
     def complete_the_upload(self) -> bool:
         response: requests.Response = self._make_post_request(
@@ -396,14 +382,10 @@ class ChunkedFileUploader(UploaderBase):
                 total_chunks=meta["total_chunks"],
                 upload_id=meta["upload_id"]
             )
-            self.split_file_into_chunks()
-            for part in range(1, self.total_chunks + 1):
-                url = self.get_signed_url(part)
-                etag = self.upload_chunks(part, url)
-                self.etags.append({'ETag': etag, 'PartNumber': part})
+
+            self.chop_and_upload_chunk()
             self.complete_the_upload()
             transcript_link = self._get_transcript_link()
-            self._tear_down()
         except Exception as e:
             self._set_result_error_message(str(e))
             return self.result
@@ -419,7 +401,7 @@ class ChunkedFileUploader(UploaderBase):
 
 
 def upload_and_get_transcription(file, api_key, language):
-    is_multipart_upload = UploaderBase(
+    is_multipart_upload = Uploader(
         file, api_key, language).is_multipart_upload()
     if is_multipart_upload:
         return ChunkedFileUploader(file, api_key, language).upload_file()
