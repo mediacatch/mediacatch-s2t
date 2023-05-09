@@ -18,7 +18,7 @@ class TestMultipartUpload:
     complete_upload_url = f"{URL}{MULTIPART_UPLOAD_COMPLETE_ENDPOINT}"
     update_status_url = f"{URL}{UPDATE_STATUS_ENDPOINT}"
     chunk_maxsize = 20480000
-    filesize = (5 * chunk_maxsize) + 10000
+    filesize = (500 * chunk_maxsize) + 10000
     file_id = "644f6676997bc2477563246e"
     upload_id = "2~iRldDSPjP1cJCXg-7NmR9Sd4xpX_Cii"
     mime_file = {
@@ -73,7 +73,7 @@ class TestMultipartUpload:
                 json={
                     "file_id": self.file_id,
                     "chunk_maxsize": self.chunk_maxsize,
-                    "total_chunks": 5 + 1,
+                    "total_chunks": 500 + 1,
                     "upload_id": self.upload_id
                 }
             )
@@ -98,7 +98,7 @@ class TestMultipartUpload:
             json={
                 "file_id": self.file_id,
                 "chunk_maxsize": self.chunk_maxsize,
-                "total_chunks": 5 + 1,
+                "total_chunks": 500 + 1,
                 "upload_id": self.upload_id
             }
         )
@@ -110,7 +110,7 @@ class TestMultipartUpload:
         assert result == {
             "file_id": self.file_id,
             "chunk_maxsize": self.chunk_maxsize,
-            "total_chunks": 5 + 1,
+            "total_chunks": 500 + 1,
             "upload_id": self.upload_id
         }
 
@@ -165,7 +165,7 @@ class TestMultipartUpload:
 
         assert chunked_file.filename == "file-test"
         assert chunked_file.file_ext == ".mp4"
-        assert chunked_file.filesize == 102410000
+        assert chunked_file.filesize == 10240010000
         assert chunked_file.language == 'da'
 
         mime_file = {
@@ -184,7 +184,7 @@ class TestMultipartUpload:
         )
         assert chunked_file.file_id == self.file_id
         assert chunked_file.chunk_maxsize == self.chunk_maxsize
-        assert chunked_file.total_chunks == 6
+        assert chunked_file.total_chunks == 501
         assert chunked_file.upload_id == self.upload_id
 
         chunked_file.chop_and_upload_chunk()
@@ -211,7 +211,7 @@ class TestUploaderMethod:
             mocker.return_value = True
             yield mocker
 
-    @mock.patch("os.path.getsize", return_value=1000000000)
+    @mock.patch("os.path.getsize", return_value=10240010000)
     def test_is_multipart_upload_return_true(self, mocker, _mock_is_file_exist_true):
         file = Uploader("file-test.mp4", "test-key")
         assert file.is_multipart_upload() is True
