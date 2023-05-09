@@ -261,7 +261,6 @@ class ChunkedFileUploader(UploaderBase):
         self.endpoint_complete: str = f"{URL}{MULTIPART_UPLOAD_COMPLETE_ENDPOINT}"
         self.headers: dict = self._get_headers()
 
-        self.temp_dir: str = ""
         self.etags: list = []
 
         self.result = {
@@ -277,36 +276,6 @@ class ChunkedFileUploader(UploaderBase):
             "X-API-KEY": self.api_key
         }
 
-    def _create_temp_dir_path(self) -> str:
-        prefix = 'mc_s2t_'
-        if self.file_id:
-            prefix += f"{self.file_id}_"
-        temporary_directory = tempfile.mkdtemp(prefix=prefix)
-        return temporary_directory
-
-    def _get_file_path(self, filename: str) -> str:
-        temp_dir = pathlib.Path(self.temp_dir)
-        filepath = temp_dir / filename
-        return str(filepath)
-
-    def _get_latest_chunk_size(self) -> int:
-        is_odd = self.filesize % self.chunk_maxsize
-        if is_odd:
-            total_chunks_filesize_before_the_last = (
-                    self.chunk_maxsize * (self.total_chunks - 1)
-            )
-            last_chunk_filesize = (
-                    self.filesize - total_chunks_filesize_before_the_last
-            )
-        else:
-            last_chunk_filesize = self.chunk_maxsize
-        return last_chunk_filesize
-
-    def _write_chunk_to_temp_file(self, chunk: bytes, filepath: str) -> None:
-        with open(filepath, 'wb') as f:
-            f.write(chunk)
-        return None
-
     def _set_result_error_message(self, msg) -> None:
         self.result["status"] = "error"
         self.result["message"] = msg
@@ -318,9 +287,6 @@ class ChunkedFileUploader(UploaderBase):
         self.total_chunks = total_chunks
         self.upload_id = upload_id
         return None
-
-    def _tear_down(self):
-        shutil.rmtree(self.temp_dir)
 
     def create_multipart_upload(self, mime_file: dict) -> dict:
         response = self._make_post_request(
@@ -336,36 +302,13 @@ class ChunkedFileUploader(UploaderBase):
             "upload_id": data["upload_id"]
         }
 
-    def split_file_into_chunks(self) -> None:
-        self.temp_dir = self._create_temp_dir_path()
-        with open(self.file, 'rb') as f:
-            part_number = 0
-            latest_chunk_size = self._get_latest_chunk_size()
-            while True:
-                part_number += 1
-                chunk_size = self.chunk_maxsize
-                if part_number == self.total_chunks:
-                    chunk_size = latest_chunk_size
-                chunk = f.read(chunk_size)
-                if not chunk:
-                    break
-
-                self._write_chunk_to_temp_file(
-                    chunk=chunk,
-                    filepath=self._get_file_path(str(part_number))
-                )
-        return None
-
     def chop_and_upload_chunk(self) -> None:
         threads = []
         with open(self.file, 'rb') as f:
             part_number = 0
-            latest_chunk_size = self._get_latest_chunk_size()
             while True:
                 part_number += 1
                 chunk_size = self.chunk_maxsize
-                if part_number == self.total_chunks:
-                    chunk_size = latest_chunk_size
                 chunk = f.read(chunk_size)
                 if not chunk:
                     break
@@ -389,14 +332,6 @@ class ChunkedFileUploader(UploaderBase):
         )
         data: dict = response.json()
         return data["url"]
-
-    def _upload_chunk_to_bucket(self, part_number: int, url: str) -> str:
-        filepath: str = self._get_file_path(str(part_number))
-        with open(filepath, 'rb') as f:
-            file_data = f.read()
-        response: requests.Response = requests.put(url=url, data=file_data)
-        etag: str = response.headers['ETag']
-        return etag
 
     def _upload_data_chunk_to_bucket(self, url: str, file_data: bytes) -> str:
         response: requests.Response = requests.put(url=url, data=file_data)

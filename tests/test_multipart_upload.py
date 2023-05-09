@@ -46,12 +46,6 @@ class TestMultipartUpload:
             yield mock_getsize
 
     @pytest.fixture(autouse=True)
-    def _mock_create_temp_dir_path(self):
-        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader._create_temp_dir_path") as mock_mkdtemp:
-            mock_mkdtemp.return_value = "temp_folder"
-            yield mock_mkdtemp
-
-    @pytest.fixture(autouse=True)
     def _mock_builtins_open(self):
         with mock.patch("builtins.open", mock.mock_open(read_data="data")) as mock_open:
             yield mock_open
@@ -63,22 +57,11 @@ class TestMultipartUpload:
             yield mock_duration
 
     @pytest.fixture(autouse=True)
-    def _mock_get_file_path(self):
-        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader._get_file_path") as mock_filepath:
-            mock_filepath.return_value = "temp_folder/1"
-            yield mock_filepath
+    def _mock_chop_and_upload_chunk(self):
+        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader.chop_and_upload_chunk") as mocker:
+            mocker.return_value = None
+            yield mocker
 
-    @pytest.fixture(autouse=True)
-    def _mock_split_file_into_chunks(self):
-        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader.split_file_into_chunks") as mock_split:
-            mock_split.return_value = 1000, {}
-            yield mock_split
-
-    @pytest.fixture(autouse=True)
-    def _mock_tear_down(self):
-        with mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader._tear_down") as mock_teardown:
-            mock_teardown.return_value = None
-            yield mock_teardown
 
     @pytest.fixture()
     def _mock_endpoints(self):
@@ -96,17 +79,6 @@ class TestMultipartUpload:
             )
             resp.add(
                 responses.POST,
-                url=self.get_signed_url,
-                status=200,
-                json={
-                    "file_id": self.file_id,
-                    "upload_id": self.upload_id,
-                    "part_number": 1,
-                    "url": "http://url-for-upoading.file"
-                }
-            )
-            resp.add(
-                responses.POST,
                 url=self.complete_upload_url,
                 status=201
             )
@@ -114,14 +86,6 @@ class TestMultipartUpload:
                 responses.POST,
                 url=self.update_status_url,
                 status=201
-            )
-            resp.add(
-                responses.PUT,
-                url="http://url-for-upoading.file",
-                status=200,
-                headers={
-                    "Etag": "a-test-etag"
-                }
             )
             yield resp
 
@@ -150,22 +114,6 @@ class TestMultipartUpload:
             "upload_id": self.upload_id
         }
 
-    def test_split_into_chunk_give_correct_number_and_filesize(self):
-        chunked_file = ChunkedFileUploader("file-test.mp4", "test-key")
-        assert chunked_file._create_temp_dir_path() == 'temp_folder'
-
-        chunked_file.chunk_maxsize = self.chunk_maxsize
-        chunked_file.filesize = self.filesize
-        chunked_file.total_chunks = 5 + 1
-        latest_chunk_size = chunked_file._get_latest_chunk_size()
-        assert latest_chunk_size == 10000
-
-        chunked_file.chunk_maxsize = self.chunk_maxsize
-        chunked_file.filesize = self.chunk_maxsize
-        chunked_file.total_chunks = 1
-        latest_chunk_size = chunked_file._get_latest_chunk_size()
-        assert latest_chunk_size == self.chunk_maxsize
-
     @responses.activate
     def test_get_signed_url_return_url(self):
         responses.add(
@@ -187,26 +135,27 @@ class TestMultipartUpload:
         assert result == "signed-upload-url"
 
     @responses.activate
-    def test_upload_chunks_return_etag(self, _mock_get_file_path):
+    @mock.patch("mediacatch_s2t.uploader.ChunkedFileUploader._get_signed_url")
+    def test_upload_part_return_etag(self, mocker):
+        mocker.return_value = "http://signed-upload-url"
+
         responses.add(
             responses.PUT,
-            url="http://url-for-upoading.file",
+            "http://signed-upload-url",
             status=200,
             headers={
-                "Etag": "a-test-etag"
+                'ETag': 'etag-from-s3'
             }
         )
 
-        chunked_file = ChunkedFileUploader("file-test.mp4", "test-key")
-        filepath = chunked_file._get_file_path("1")
-        assert filepath == "temp_folder/1"
+        file = ChunkedFileUploader("file-test.mp4", "test-key")
+        url = file._get_signed_url(1)
+        assert url == "http://signed-upload-url"
+        file_data = b''
+        etag = file._upload_data_chunk_to_bucket(url, file_data)
+        assert etag == 'etag-from-s3'
 
-        etag = chunked_file._upload_chunk_to_bucket(1, "http://url-for-upoading.file")
-        assert etag == "a-test-etag"
-
-
-    @pytest.mark.skip('update it later')
-    def test_upload_file(self, _mock_endpoints, _mock_split_file_into_chunks):
+    def test_upload_file(self, _mock_endpoints):
         chunked_file = ChunkedFileUploader("file-test.mp4", "test-key")
 
         assert chunked_file._is_file_exist() is True
@@ -238,13 +187,7 @@ class TestMultipartUpload:
         assert chunked_file.total_chunks == 6
         assert chunked_file.upload_id == self.upload_id
 
-        chunked_file.split_file_into_chunks()
-
-        url = chunked_file._get_signed_url(1)
-        assert url == "http://url-for-upoading.file"
-
-        etag = chunked_file._upload_chunk_to_bucket(1, "http://url-for-upoading.file")
-        assert etag == "a-test-etag"
+        chunked_file.chop_and_upload_chunk()
 
         assert chunked_file.complete_the_upload() is True
 
