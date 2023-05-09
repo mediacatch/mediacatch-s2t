@@ -132,25 +132,6 @@ class UploaderBase(metaclass=abc.ABCMeta):
         processing_time = PROCESSING_TIME_RATIO * audio_length
         return round(processing_time / 1000)
 
-    def _get_upload_url(self, mime_file):
-        response = self._make_post_request(
-            url=f'{URL}{SINGLE_UPLOAD_ENDPOINT}',
-            json=mime_file,
-            headers={
-                "Content-type": 'application/json',
-                "X-API-KEY": self.api_key
-            }
-        )
-        response_data = json.loads(response.text)
-        url = response_data.get('url')
-        data = response_data.get('fields')
-        _id = response_data.get('id')
-        return {
-            "url": url,
-            "fields": data,
-            "id": _id
-        }
-
     def _post_file(self, url, data):
         with open(self.file, 'rb') as f:
             response = self._make_post_request(
@@ -189,6 +170,25 @@ class Uploader(UploaderBase):
     The API server currently only allows file less than 4gb
     to be sent with this upload class.
     """
+
+    def _get_upload_url(self, mime_file):
+        response = self._make_post_request(
+            url=f'{URL}{SINGLE_UPLOAD_ENDPOINT}',
+            json=mime_file,
+            headers={
+                "Content-type": 'application/json',
+                "X-API-KEY": self.api_key
+            }
+        )
+        response_data = json.loads(response.text)
+        url = response_data.get('url')
+        data = response_data.get('fields')
+        _id = response_data.get('id')
+        return {
+            "url": url,
+            "fields": data,
+            "id": _id
+        }
 
     def upload_file(self):
         result = {
