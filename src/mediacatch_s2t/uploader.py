@@ -1,8 +1,6 @@
 import abc
 import os
 import pathlib
-import shutil
-import tempfile
 import threading
 
 import requests
@@ -17,6 +15,7 @@ from mediacatch_s2t import (
     MULTIPART_UPLOAD_COMPLETE_ENDPOINT,
     PROCESSING_TIME_RATIO, MULTIPART_FILESIZE
 )
+from mediacatch_s2t.helper import update_myself
 
 
 class FFProbeResult(NamedTuple):
@@ -401,6 +400,7 @@ class ChunkedFileUploader(UploaderBase):
 
 
 def upload_and_get_transcription(file, api_key, language):
+    update_myself()
     is_multipart_upload = Uploader(
         file, api_key, language).is_multipart_upload()
     if is_multipart_upload:
