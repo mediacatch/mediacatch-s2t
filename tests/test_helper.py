@@ -59,28 +59,29 @@ class TestHelper:
         with mock.patch("mediacatch_s2t.helper.get_last_updated", return_value=253402210800):
             assert helper.update_myself() is False
 
-    def test_update_myself_update_to_last_version(self):
-        with (mock.patch("mediacatch_s2t.helper.read_installed_version",
-                        return_value="0.0.1"),
-              mock.patch("mediacatch_s2t.helper.check_latest_version",
-                        return_value="1.0.7"),
-              mock.patch("mediacatch_s2t.helper.get_last_updated",
-                         return_value=0),
-              mock.patch("subprocess.run", return_value=None),
-              mock.patch("mediacatch_s2t.helper.set_last_update",
-                         return_value=None),
-              ):
-            assert helper.update_myself() is True
+    @mock.patch("mediacatch_s2t.helper.set_last_update",
+                         return_value=None)
+    @mock.patch("mediacatch_s2t.helper.get_last_updated",
+                         return_value=0)
+    @mock.patch("mediacatch_s2t.helper.check_latest_version",
+               return_value="1.0.7")
+    @mock.patch("mediacatch_s2t.helper.read_installed_version",
+                        return_value="0.0.1")
+    @mock.patch("mediacatch_s2t.helper.subprocess.run")
+    def test_update_myself_update_to_last_version(
+            self, mocker_run, mocker_set_lu, mocker_get_lu, mocker_check_lv,
+            mocker_read):
+        assert helper.update_myself() is True
 
-    def test_update_myself_update_version_is_up_to_date(self):
-        with (mock.patch("mediacatch_s2t.helper.read_installed_version",
-                        return_value="8.8.1"),
-              mock.patch("mediacatch_s2t.helper.check_latest_version",
-                        return_value="8.8.1"),
-              mock.patch("mediacatch_s2t.helper.get_last_updated",
-                         return_value=0),
-              mock.patch("subprocess.run", return_value=None),
-              mock.patch("mediacatch_s2t.helper.set_last_update",
-                         return_value=None),
-              ):
-            assert helper.update_myself() is False
+
+    @mock.patch("mediacatch_s2t.helper.read_installed_version",
+                        return_value="8.8.1")
+    @mock.patch("mediacatch_s2t.helper.check_latest_version",
+                        return_value="8.8.1")
+    @mock.patch("mediacatch_s2t.helper.get_last_updated",
+                         return_value=0)
+    @mock.patch("mediacatch_s2t.helper.set_last_update",
+                         return_value=None)
+    def test_update_myself_update_version_is_up_to_date(
+            self, mocker_set_lu, mocker_get_lu, mocker_check_lv, mocker_read):
+        assert helper.update_myself() is False
