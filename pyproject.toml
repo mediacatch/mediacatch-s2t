@@ -16,6 +16,7 @@ classifiers = [
 ]
 keywords = ["mediacatch", "speech to text", "uploader", "nlp"]
 dependencies = [
+    "importlib_metadata",
     "requests",
     "rich"
 ]
