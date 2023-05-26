@@ -23,4 +23,4 @@ jobs:
           git config user.email "support@mediacatch.io"
           git add pyproject.toml src/mediacatch_s2t/__init__.py
           git commit -m "bump version to ${{ github.event.release.tag_name }}"
-          git push origin main
+          git push origin HEAD:main
