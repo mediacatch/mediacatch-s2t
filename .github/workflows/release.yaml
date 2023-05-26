@@ -1,0 +1,26 @@
+name: release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  update-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Update version number in the files
+        run: |
+          sed -i "s/version = .*/version = '${{ github.event.release.tag_name }}'/" pyproject.toml
+          sed -i "s/__version__ = .*/__version__ = '${{ github.event.release.tag_name }}'/"  ./src/mediacatch_s2t/__init__.py
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "gha-release"
+          git config user.email "support@mediacatch.io"
+          git add pyproject.toml src/mediacatch_s2t/__init__.py
+          git commit -m "bump version"
+          git push
