@@ -34,7 +34,7 @@ jobs:
 
   build-and-publish:
     name: Build and publish Python distribution package to PyPI
-    need: update-files
+    needs: update-files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
