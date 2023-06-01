@@ -2,7 +2,7 @@ name: cd-build-and-publish
 
 on:
   workflow_run:
-    workflows: [ci-build-and-test]
+    workflows: [ci-build-and-test, release]
     types:
       - completed
   release:
