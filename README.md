@@ -13,8 +13,21 @@ python -m mediacatch_s2t <api_key> <path/to/your/media/file>
 ```
 
 Or import it as a module
-```bash
+```python
 from mediacatch_s2t.uploader import upload_and_get_transcription
 
+
+'''
+The result will be a JSON object:
+{
+  "url": "url-to-your-transcription",
+  "status": "uploaded",
+  "estimated_processing_time": "your-estimated-time-to-get-your-transcription-done",
+  "message": "The file has been uploaded."
+}
+
+'''
 result = upload_and_get_transcription('path/to/your/media/file', 'api_key')
 ```
+
+
