@@ -2,7 +2,7 @@ name: cd-build-and-publish
 
 on:
   workflow_run:
-    workflows: [ci-build-and-test, release]
+    workflows: [ci-build-and-test]
     types:
       - completed
   release:
@@ -13,8 +13,26 @@ on:
       - '*.*.*.'
 
 jobs:
+  update-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update version number in the files
+        run: |
+          sed -i "s/version = .*/version = '${{ github.event.release.tag_name }}'/" pyproject.toml
+          sed -i "s/__version__ = .*/__version__ = '${{ github.event.release.tag_name }}'/"  ./src/mediacatch_s2t/__init__.py
+      - name: Commit and push changes
+        run: |
+          git config user.name "gha-cd-build-and-publish"
+          git config user.email "support@mediacatch.io"
+          git add pyproject.toml src/mediacatch_s2t/__init__.py
+          git commit -m "bump version to ${{ github.event.release.tag_name }}"
+          git push origin HEAD:main
+
   build-and-publish:
     name: Build and publish Python distribution package to PyPI
+    needs: update-files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
