@@ -1,20 +1,18 @@
 name: cd-build-and-publish
 
 on:
-  workflow_run:
-    workflows: [ci-build-and-test]
-    types:
-      - completed
   release:
     types:
       - released
-  push:
-    tags:
-      - '*.*.*.'
 
 jobs:
+  compliance:
+    if: github.event.release.target_commitish == 'main'
+    uses: ./.github/workflows/lint-and-pytest.yml
+
   update-files:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: github.event.release.target_commitish == 'main'
+    needs: compliance
     runs-on: ubuntu-latest
 
     steps:
