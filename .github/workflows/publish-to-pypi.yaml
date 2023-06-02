@@ -36,8 +36,7 @@ jobs:
         run: |
           echo "gh tag name ${{ github.event.release.tag_name }}"
           git tag -d ${{ github.event.release.tag_name }}
-#          git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
-          git tag ${{ github.event.release.tag_name }} $(git rev-parse HEAD)
+          git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
 
       - name: Push changes
         uses: ad-m/github-push-action@master
