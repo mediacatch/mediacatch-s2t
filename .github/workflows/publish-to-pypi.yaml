@@ -7,10 +7,11 @@ on:
 
 jobs:
   compliance:
+    if: github.event.release.target_commitish == 'main'
     uses: ./.github/workflows/lint-and-pytest.yml
 
   update-files:
-    if: ${{ github.event_name == 'release' }}
+    if: github.event.release.target_commitish == 'main'
     needs: compliance
     runs-on: ubuntu-latest
 
