@@ -34,9 +34,8 @@ jobs:
 
       - name: Overwrite tag
         run: |
-          echo "gh tag name ${{ github.event.release.tag_name }}"
-          git tag -d ${{ github.event.release.tag_name }}
-          git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
+          echo "gh tag name ${{ github.event.release.tag_name }} to $(git rev-parse HEAD)"
+          git tag --force ${{ github.event.release.tag_name }} $(git rev-parse HEAD)
 
       - name: Push changes
         uses: ad-m/github-push-action@master
