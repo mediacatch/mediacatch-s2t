@@ -10,6 +10,7 @@ jobs:
     uses: ./.github/workflows/lint-and-pytest.yml
 
   update-files:
+    if: ${{ github.event_name == 'release' }}
     needs: compliance
     runs-on: ubuntu-latest
 
