@@ -10,7 +10,7 @@ on:
 
 jobs:
   compliance:
-    uses: mediacatch/mediacatch-s2t/.github/workflows/lint-and-pytest.yml
+    uses: ./.github/workflows/lint-and-pytest.yml
 
   update-files:
     needs: compliance
