@@ -1,0 +1,87 @@
+name: cd-build-and-publish
+
+on:
+  release:
+    types:
+      - released
+
+jobs:
+  compliance:
+    if: github.event.release.target_commitish == 'main'
+    uses: ./.github/workflows/lint-and-pytest.yml
+
+  update-files:
+    if: github.event.release.target_commitish == 'main'
+    needs: compliance
+    outputs:
+      new_sha: ${{ steps.sha.outputs.SHA }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Update version number in the files
+        run: |
+          sed -i "s/version = .*/version = '${{ github.event.release.tag_name }}'/" pyproject.toml
+          sed -i "s/__version__ = .*/__version__ = '${{ github.event.release.tag_name }}'/"  ./src/mediacatch_s2t/__init__.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "gha-release"
+          git config user.email "support@mediacatch.io"
+          git add pyproject.toml src/mediacatch_s2t/__init__.py
+          git commit -m "bump version to ${{ github.event.release.tag_name }}"
+
+      - name: Overwrite tag
+        run: |
+          echo "gh tag name ${{ github.event.release.tag_name }} to $(git rev-parse HEAD)"
+          git tag --force ${{ github.event.release.tag_name }} $(git rev-parse HEAD)
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          tags: true
+          force: true
+
+      - name: get sha
+        id: sha
+        run: |
+          sha_new=$(git rev-parse HEAD)
+          echo $sha_new
+          echo "SHA=$sha_new" >> $GITHUB_OUTPUT
+      - run:
+          echo ${{ steps.sha.outputs.SHA }}
+
+  build-and-publish:
+    name: Build and publish Python distribution package to PyPI
+    needs: update-files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository with new commit
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.update-files.outputs.new_sha }}
+      - name: Show latest sha commit
+        run: |
+          git rev-parse HEAD
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.7"
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install
+          build
+          --user
+      - name: Build a binary wheel and a source tarball
+        run: >-
+          python3 -m 
+          build
+          --sdist
+          --wheel
+          --outdir dist/
+      - name: Publish distribution package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

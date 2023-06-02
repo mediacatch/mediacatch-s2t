@@ -3,7 +3,7 @@
 """
 
 # Version of the mc-s2t-mediacatch_s2t
-__version__ = "0.0.4"
+__version__ = '0.1.8'
 
 import os
 
