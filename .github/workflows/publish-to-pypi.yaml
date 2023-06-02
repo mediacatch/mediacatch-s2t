@@ -36,7 +36,8 @@ jobs:
         run: |
           echo "gh tag name ${{ github.event.release.tag_name }}"
           git tag -d ${{ github.event.release.tag_name }}
-          git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
+#          git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
+          git tag ${{ github.event.release.tag_name }} $(git rev-parse HEAD)
 
       - name: Push changes
         uses: ad-m/github-push-action@master
@@ -60,7 +61,7 @@ jobs:
       - name: Checkout repository with new commit
         uses: actions/checkout@v3
         with:
-          ref: ${{ needs.update-files.outputs.commit_sha }}
+          ref: ${{ needs.update-files.outputs.new_sha }}
       - name: print commit
         run: |
           git rev-parse HEAD
