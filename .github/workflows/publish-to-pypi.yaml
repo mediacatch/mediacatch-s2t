@@ -32,7 +32,7 @@ jobs:
 
       - name: Overwrite tag
         run: |
-          echo "gh tag name ${{ github.event.release.tag_name }}
+          echo "gh tag name ${{ github.event.release.tag_name }}"
           git tag -d ${{ github.event.release.tag_name }}
           git tag -a ${{ github.event.release.tag_name }} -m "Tagging release"
 
