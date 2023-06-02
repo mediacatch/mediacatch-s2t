@@ -48,7 +48,7 @@ jobs:
 
   get-new-commit:
     needs: update-files
-    run-on: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository with new commit
         uses: actions/checkout@v3
