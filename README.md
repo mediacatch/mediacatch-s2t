@@ -1,6 +1,6 @@
 # MediaCatch Speech-To-Text Uploader
 
-![github test](https://github.com/mediacatch/mediacatch-s2t/actions/workflows/github-action.yml/badge.svg) [![codecov](https://codecov.io/gh/mediacatch/mediacatch-s2t/branch/main/graph/badge.svg?token=ZQ36ZRJ2ZU)](https://codecov.io/gh/mediacatch/mediacatch-s2t)
+![github test](https://github.com/mediacatch/mediacatch-s2t/actions/workflows/lint-and-pytest.yml/badge.svg) [![codecov](https://codecov.io/gh/mediacatch/mediacatch-s2t/branch/main/graph/badge.svg?token=ZQ36ZRJ2ZU)](https://codecov.io/gh/mediacatch/mediacatch-s2t)
 
 mediacatch-s2t is the [MediaCatch](https://mediacatch.io/) service for uploading a file in python and get the transcription result in a link. This module requires python3.7 or above.
 
