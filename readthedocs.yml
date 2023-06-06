@@ -1,0 +1,16 @@
+version: 2
+
+sphinx:
+  configuration: docs/source/conf.py
+
+build:
+  os: ubuntu-latest
+  tools:
+    python: "3.10"
+
+# Python 3.9?
+# https://docs.readthedocs.io/en/stable/config-file/v2.html#build-beta-specification
+# https://github.com/readthedocs/readthedocs.org/issues/7554
+python:
+  install:
+  - requirements: docs/requirements.txt
