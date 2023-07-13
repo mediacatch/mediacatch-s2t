@@ -56,7 +56,7 @@ def update_myself() -> bool:
         subprocess.run([
             "python", "-m",
             "pip", "install",
-            f"{_PACKAGE_NAME}", "-U", "--quite"
+            f"{_PACKAGE_NAME}", "-U", "--quiet"
         ])
         set_last_update()
         return True
