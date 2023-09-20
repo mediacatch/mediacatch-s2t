@@ -8,6 +8,8 @@ import subprocess
 import json
 from typing import NamedTuple
 
+from langcodes import standardize_tag
+
 from mediacatch_s2t import (
     URL,
     SINGLE_UPLOAD_ENDPOINT, TRANSCRIPT_ENDPOINT, UPDATE_STATUS_ENDPOINT,
@@ -41,7 +43,7 @@ class UploaderBase(metaclass=abc.ABCMeta):
     def __init__(self, file, api_key, language='da'):
         self.file = file
         self.api_key = api_key
-        self.language = language
+        self.language = standardize_tag(language)
         self.file_id = None
 
     def _is_file_exist(self):
@@ -146,7 +148,8 @@ class UploaderBase(metaclass=abc.ABCMeta):
             json={"id": self.file_id},
             headers={
                 "Content-type": 'application/json',
-                "X-API-KEY": self.api_key
+                "X-API-KEY": self.api_key,
+                "X-LANG": self.language
             }
         )
         return self._transcript_link
@@ -176,7 +179,8 @@ class Uploader(UploaderBase):
             json=mime_file,
             headers={
                 "Content-type": 'application/json',
-                "X-API-KEY": self.api_key
+                "X-API-KEY": self.api_key,
+                "X-LANG": self.language
             }
         )
         response_data = json.loads(response.text)
@@ -272,7 +276,8 @@ class ChunkedFileUploader(UploaderBase):
     def _get_headers(self) -> dict:
         return {
             "Content-type": "application/json",
-            "X-API-KEY": self.api_key
+            "X-API-KEY": self.api_key,
+            "X-LANG": self.language
         }
 
     def _set_result_error_message(self, msg) -> None:
