@@ -108,22 +108,22 @@ class UploaderBase(metaclass=abc.ABCMeta):
         """
         try:
             probe = self._ffprobe(self.file)
-            if probe.return_code:
-                return 0, probe.error
-            else:
-                try:
-                    for stream in probe.json['streams']:
-                        if stream['codec_type'] == 'audio':
-                            return int(float(stream['duration']) * 1000), stream
-                    else:
-                        return 0, "The file doesn't have an audio track"
-                except Exception:
-                    if 'duration' in probe.json['format']:
-                        return int(float(probe.json['format']['duration']) * 1000), probe.json['format']
-                    else:
-                        return 0, "Duration couldn't be found for audio track"
         except OSError as e:
             return 0, 'FFmpeg not installed (sudo apt install ffmpeg)'
+        if probe.return_code:
+            return 0, probe.error
+        else:
+            try:
+                for stream in probe.json['streams']:
+                    if stream['codec_type'] == 'audio':
+                        return int(float(stream['duration']) * 1000), stream
+                else:
+                    return 0, "The file doesn't have an audio track"
+            except Exception:
+                if 'duration' in probe.json['format']:
+                    return int(float(probe.json['format']['duration']) * 1000), probe.json['format']
+                else:
+                    return 0, "Duration couldn't be found for audio track"
 
     def estimated_result_time(self, audio_length=0):
         """Estimated processing time in seconds"""
