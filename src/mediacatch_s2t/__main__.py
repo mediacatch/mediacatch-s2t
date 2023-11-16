@@ -13,13 +13,13 @@ def main() -> None:
     )
     parser.add_argument("api_key", type=str, help="MediaCatch API key.")
     parser.add_argument("file", type=str, help="A media file.")
-    parser.add_argument("--language", type=str, default='da', help="The main language in the file.")
+    parser.add_argument("--quota", type=str, default='any', help="The main language in the file.")
     args = parser.parse_args()
 
     console = Console()
     with console.status(
             "[bold green]Uploading file to MediaCatch..."):
-        result = uploader.upload_and_get_transcription(args.file, args.api_key, args.language)
+        result = uploader.upload_and_get_transcription(args.file, args.api_key, args.quota)
         if result['status'] == 'error':
             sys.exit(
                 f"Error occurred:\n{result['message']}. "
