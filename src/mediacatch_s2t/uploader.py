@@ -84,7 +84,7 @@ class Uploader(UploaderBase):
 
         self.file_name = self.file.name
         self.file_extension = self.file.suffix
-        self.file_size = os.path.getsize(self.file)
+        self.file_size = os.path.getsize(self.file) // 1024
 
         self.api_key = api_key
         self.quota = quota
