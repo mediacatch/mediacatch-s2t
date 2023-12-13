@@ -1,4 +1,3 @@
-import os
 import requests
 import threading
 from abc import ABC
