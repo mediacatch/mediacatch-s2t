@@ -13,7 +13,7 @@ def main() -> None:
     )
     parser.add_argument("api_key", type=str, help="MediaCatch API key.")
     parser.add_argument("file", type=str, help="A media file.")
-    parser.add_argument("--quota", type=str, default='any', help="The main language in the file.")
+    parser.add_argument("--quota", type=str, default=None, help="The quota to bill usage to. Defaults to None.")
     args = parser.parse_args()
 
     console = Console()

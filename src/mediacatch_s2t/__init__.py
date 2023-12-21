@@ -7,7 +7,7 @@ __version__ = '2.0.0'
 
 import os
 
-URL: str = os.environ.get('MEDIACATCH_URL', 'https://s2t.mediacatch.io')
+URL: str = os.environ.get('MEDIACATCH_URL', 'https://s2t.mediacatch.io/api/v2')
 UPLOAD_CREATE_ENDPOINT: str = os.environ.get(
     'MEDIACATCH_UPLOAD_CREATE_ENDPOINT',
     '/upload/')
