@@ -147,11 +147,12 @@ class Uploader:
 
     def finalize_upload(self) -> None:
         """Finalizes the file upload process, indicating all chunks have been uploaded."""
-        self._make_request(
+        response = self._make_request(
             'post',
             self.endpoints['complete'].format(file_id=self.file_id),
             json={"parts": self.etags}
         )
+        self.estimated_processing_time = response.json()['estimated_processing_time']
 
     def get_upload_result(self) -> Dict[str, str]:
         """Constructs the final result of the file upload process.
@@ -162,7 +163,7 @@ class Uploader:
         return {
             "url": self.endpoints['result'].format(file_id=self.file_id),
             "status": "uploaded",
-            "estimated_processing_time": 0,
+            "estimated_processing_time": self.estimated_processing_time,
             "message": "The file has been uploaded."
         }
 
