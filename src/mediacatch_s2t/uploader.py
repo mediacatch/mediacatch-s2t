@@ -39,7 +39,7 @@ class Uploader:
     CHUNK_SIZE = 100 * 1024 * 1024  # 100 MB
     REQUEST_RETRY_LIMIT = 3
 
-    def __init__(self, file: str, api_key: str, quota: str | None = None, max_threads: int = 5) -> None:
+    def __init__(self, file: str, api_key: str, quota: Optional[str] = None, max_threads: int = 5) -> None:
         self.file_path = Path(file)
         if not self.file_path.is_file():
             raise FileNotFoundError(f"The file {file} does not exist")
@@ -201,7 +201,7 @@ class Uploader:
         """
         return 200 <= response.status_code < 300
 
-def upload_and_get_transcription(file: str, api_key: str, quota: str | None = None) -> dict[str, str]:
+def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] = None) -> dict[str, str]:
     """Uploads a file and returns its transcription.
 
     Args:
