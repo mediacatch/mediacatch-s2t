@@ -1,7 +1,7 @@
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, Optional, Generator
+from typing import Optional, Generator
 
 from mediacatch_s2t import (
     URL,
@@ -39,7 +39,7 @@ class Uploader:
     CHUNK_SIZE = 100 * 1024 * 1024  # 100 MB
     REQUEST_RETRY_LIMIT = 3
 
-    def __init__(self, file: str, api_key: str, quota: int, max_threads: int = 5) -> None:
+    def __init__(self, file: str, api_key: str, quota: str | None = None, max_threads: int = 5) -> None:
         self.file_path = Path(file)
         if not self.file_path.is_file():
             raise FileNotFoundError(f"The file {file} does not exist")
@@ -61,11 +61,11 @@ class Uploader:
         }
         self.max_threads = max_threads
 
-    def upload_file(self) -> Dict[str, str]:
+    def upload_file(self) -> dict[str, str]:
         """Initiates and manages the file upload process.
 
         Returns:
-            Dict[str, str]: A dictionary containing the result of the upload process.
+            dict[str, str]: A dictionary containing the result of the upload process.
         """
         try:
             self.file_id = self.initiate_file_upload()
@@ -154,11 +154,11 @@ class Uploader:
         )
         self.estimated_processing_time = response.json()['estimated_processing_time']
 
-    def get_upload_result(self) -> Dict[str, str]:
+    def get_upload_result(self) -> dict[str, str]:
         """Constructs the final result of the file upload process.
 
         Returns:
-            Dict[str, str]: A dictionary containing details of the upload, including the file URL.
+            dict[str, str]: A dictionary containing details of the upload, including the file URL.
         """
         return {
             "url": self.endpoints['result'].format(file_id=self.file_id),
@@ -201,16 +201,16 @@ class Uploader:
         """
         return 200 <= response.status_code < 300
 
-def upload_and_get_transcription(file: str, api_key: str, quota: int) -> Dict[str, str]:
+def upload_and_get_transcription(file: str, api_key: str, quota: str | None = None) -> dict[str, str]:
     """Uploads a file and returns its transcription.
 
     Args:
         file (str): The path to the file to be uploaded.
         api_key (str): The API key for authentication.
-        quota (int): The quota limit for the user.
+        quota (str | None): The quota to bill transcription hours from. Use None if user only has 1 quota.
 
     Returns:
-        Dict[str, str]: A dictionary containing the transcription or error message.
+        dict[str, str]: A dictionary containing the transcription or error message.
 
     Raises:
         UploaderException: If there's an issue with the file upload.
