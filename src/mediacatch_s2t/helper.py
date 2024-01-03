@@ -12,6 +12,12 @@ _UPDATE_DURATION: int = 24 * 60 * 60  # 24 hour
 
 
 def read_installed_version() -> str:
+    """
+    Reads and returns the installed version of the specified package.
+    
+    Returns:
+        str: The installed version of the package. Returns '0.0.0' if the package is not found.
+    """
     try:
         _version: str = version(_PACKAGE_NAME)
     except PackageNotFoundError:
@@ -20,6 +26,12 @@ def read_installed_version() -> str:
 
 
 def check_latest_version() -> Union[str, None]:
+    """
+    Checks and returns the latest available version of the specified package from PyPI.
+    
+    Returns:
+        Union[str, None]: The latest version available on PyPI. Returns None if there is a request exception or if the version information is not available.
+    """
     try:
         response = requests.get(f"https://pypi.org/pypi/{_PACKAGE_NAME}/json")
         latest_version: str = response.json()['info']['version']
@@ -29,6 +41,12 @@ def check_latest_version() -> Union[str, None]:
 
 
 def get_last_updated() -> int:
+    """
+    Retrieves the timestamp of the last update from the environment variable.
+    
+    Returns:
+        int: The timestamp of the last update. Returns 0 if the environment variable is not set or cannot be converted to an integer.
+    """
     _last_updated = os.environ.get('MEDIACATCH_S2T_LAST_UPDATE', 0)
     try:
         last_updated = int(_last_updated)
@@ -38,12 +56,24 @@ def get_last_updated() -> int:
 
 
 def set_last_update() -> None:
+    """
+    Updates the environment variable 'MEDIACATCH_S2T_LAST_UPDATE' with the current timestamp.
+    
+    Returns:
+        None
+    """
     timestamp_now: int = int(datetime.now().timestamp())
     os.environ['MEDIACATCH_S2T_LAST_UPDATE']: str = str(timestamp_now)
     return None
 
 
 def update_myself() -> bool:
+    """
+    Updates the package if a newer version is available and the last update was longer ago than the specified duration.
+
+    Returns:
+        bool: True if the package was updated, False otherwise.
+    """
     timestamp_now = int(datetime.now().timestamp())
     timestamp_last_updated = get_last_updated()
     latest_update_in_seconds = timestamp_now - timestamp_last_updated
