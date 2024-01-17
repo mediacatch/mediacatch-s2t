@@ -9,7 +9,7 @@ You can use it on your CLI
 ```bash
 pip install mediacatch_s2t
 
-python -m mediacatch_s2t <api_key> <path/to/your/media/file>
+python -m mediacatch_s2t <api_key> <path/to/your/media/file> --fallback_language da
 ```
 
 Or import it as a module
@@ -27,7 +27,7 @@ The result will be a JSON object:
 }
 
 '''
-result = upload_and_get_transcription('path/to/your/media/file', 'api_key')
+result = upload_and_get_transcription('path/to/your/media/file', 'api_key', fallback_language='da')
 ```
 
 

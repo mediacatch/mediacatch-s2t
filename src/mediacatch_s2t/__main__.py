@@ -14,12 +14,13 @@ def main() -> None:
     parser.add_argument("api_key", type=str, help="MediaCatch API key.")
     parser.add_argument("file", type=str, help="A media file.")
     parser.add_argument("--quota", type=str, default=None, help="The quota to bill usage to. Defaults to None.")
+    parser.add_argument("--fallback_language", type=str, default=None, help="Overrides the language to transcribe in if language identification fails. If None, uses the default language of the quota.")
     args = parser.parse_args()
 
     console = Console()
     with console.status(
             "[bold green]Uploading file to MediaCatch..."):
-        result = uploader.upload_and_get_transcription(args.file, args.api_key, args.quota)
+        result = uploader.upload_and_get_transcription(args.file, args.api_key, args.quota, args.fallback_language)
         if result['status'] == 'error':
             sys.exit(
                 f"Error occurred:\n{result['message']}. "

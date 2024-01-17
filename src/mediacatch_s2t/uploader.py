@@ -29,7 +29,7 @@ class Uploader:
     Attributes:
         file_path (Path): Path of the file to be uploaded.
         api_key (str): API key for authentication.
-        quota (int): Quota limit for the user.
+        quota (str): The quota to bill usage to.
         file_id (str): Unique identifier for the file once uploaded.
         etags (list): List of ETag values for each uploaded chunk.
         endpoints (dict): Endpoints for file creation, signed URL generation, and completion.
@@ -39,13 +39,14 @@ class Uploader:
     CHUNK_SIZE = 100 * 1024 * 1024  # 100 MB
     REQUEST_RETRY_LIMIT = 3
 
-    def __init__(self, file: str, api_key: str, quota: Optional[str] = None, max_threads: int = 5) -> None:
+    def __init__(self, file: str, api_key: str, quota: Optional[str] = None, fallback_language: Optional[str] = None, max_threads: int = 5) -> None:
         self.file_path = Path(file)
         if not self.file_path.is_file():
             raise FileNotFoundError(f"The file {file} does not exist")
 
         self.api_key = api_key
         self.quota = quota
+        self.fallback_language = fallback_language
         self.file_id = ""
         self.etags = []
         self.endpoints = {
@@ -85,6 +86,7 @@ class Uploader:
             "file_name": self.file_path.name,
             "file_extension": self.file_path.suffix,
             "quota": self.quota,
+            "fallback_language": self.fallback_language,
         }
         response = self._make_request('post', self.endpoints['create'], json=mime_file)
         return response.json()["file_id"]
@@ -201,7 +203,7 @@ class Uploader:
         """
         return 200 <= response.status_code < 300
 
-def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] = None) -> dict[str, str]:
+def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] = None, fallback_language: Optional[str] = None) -> dict[str, str]:
     """Uploads a file and returns its transcription.
 
     Args:
@@ -216,7 +218,7 @@ def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] =
         UploaderException: If there's an issue with the file upload.
     """
     try:
-        uploader = Uploader(file, api_key, quota)
+        uploader = Uploader(file, api_key, quota, fallback_language)
         result = uploader.upload_file()
     except FileNotFoundError as fnfe:
         return {"status": "error", "message": str(fnfe)}
