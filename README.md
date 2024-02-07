@@ -106,7 +106,6 @@ mediacatch-s2t is the [MediaCatch](https://mediacatch.io/) service for uploading
 - yi (Yiddish)
 - yo (Yoruba)
 - zh (Chinese)
-- yue (Cantonese)
 
 </details>
 
