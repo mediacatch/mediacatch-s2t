@@ -14,9 +14,12 @@ def main() -> None:
     parser.add_argument("api_key", type=str, help="MediaCatch API key.")
     parser.add_argument("file", type=str, help="A media file.")
     parser.add_argument("--quota", type=str, default=None, help="The quota to bill usage to. Defaults to None.")
-    parser.add_argument("--fallback_language", type=str, default=None, help="Overrides the language to transcribe in if language identification fails. If None, uses the default language of the quota.")
+    parser.add_argument("--fallback_language", type=str, default=True, help="Overrides the language to transcribe in if language identification fails. If True or None, it uses the default language of the quota. If False, the quota default language is ignored.")
     args = parser.parse_args()
 
+    if args.fallback_language in ['True', 'False', 'None']:
+        args.fallback_language = eval(args.fallback_language)
+        
     console = Console()
     with console.status(
             "[bold green]Uploading file to MediaCatch..."):

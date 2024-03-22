@@ -1,7 +1,7 @@
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Optional, Generator
+from typing import Optional, Generator, Union
 
 from mediacatch_s2t import (
     URL,
@@ -203,13 +203,14 @@ class Uploader:
         """
         return 200 <= response.status_code < 300
 
-def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] = None, fallback_language: Optional[str] = None) -> dict[str, str]:
+def upload_and_get_transcription(file: str, api_key: str, quota: Optional[str] = None, fallback_language: Optional[Union[str, bool]] = None) -> dict[str, str]:
     """Uploads a file and returns its transcription.
 
     Args:
         file (str): The path to the file to be uploaded.
         api_key (str): The API key for authentication.
         quota (str | None): The quota to bill transcription hours from. Use None if user only has 1 quota.
+        fallback_language (str | bool | None): Overrides the language to transcribe in if language identification fails. If True or None, it uses the default language of the quota. If False, the quota default language is ignored.
 
     Returns:
         dict[str, str]: A dictionary containing the transcription or error message.
