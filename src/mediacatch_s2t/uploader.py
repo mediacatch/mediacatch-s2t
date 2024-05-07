@@ -1,5 +1,6 @@
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import BufferedReader
 from pathlib import Path
 from typing import Optional, Generator, Union
 
@@ -104,19 +105,16 @@ class Uploader:
                 except Exception as e:
                     print(f"Chunk {part_number} failed to upload due to: {e}")
 
-    def _read_file_in_chunks(self, file) -> Generator[bytes, None, None]:
+    def _read_file_in_chunks(self, file: BufferedReader) -> Generator[bytes, None, None]:
         """Generator that reads the file in chunks.
 
         Args:
-            file (IO[bytes]): File object opened in binary read mode.
+            file (BufferedReader): File object opened in binary read mode.
 
         Yields:
             bytes: A chunk of the file.
         """
-        while True:
-            chunk = file.read(self.CHUNK_SIZE)
-            if not chunk:
-                break
+        while chunk := file.read(self.CHUNK_SIZE):
             yield chunk
 
     def upload_chunk(self, part_number: int, chunk: bytes) -> None:
